@@ -101,11 +101,25 @@ class ViewController: UIViewController {
         let third3Slow = CMTimeMake(value: videoAsset.duration.value / 3 / 3, timescale: 600)
         
         
+        
+
         do {
             try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
-            track1.scaleTimeRange(third1, toDuration: third1Slow)
-            track1.scaleTimeRange(third2, toDuration: third2Fast)
-            track1.scaleTimeRange(third3, toDuration: third3Slow)
+//            track1.scaleTimeRange(third1, toDuration: third1Slow)
+//            track1.scaleTimeRange(third2, toDuration: third2Fast)
+//            track1.scaleTimeRange(third3, toDuration: third3Slow)
+            
+            var frame : Int64 = 0
+            let singleFrame = CMTimeMake(value: 10, timescale: 600)
+            let durationInSeconds = Int64(CMTimeGetSeconds(videoAsset.duration) * 600)
+            var start = CMTime.zero
+            
+            while frame < durationInSeconds {
+                let duration = CMTimeMake(value: 10 + frame , timescale: 600)
+                track1.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame), toDuration: duration)
+                start = CMTimeAdd(start, duration)
+                frame += 1
+            }
 
             track1.preferredTransform = videoAssetSourceTrack.preferredTransform
             
@@ -119,7 +133,6 @@ class ViewController: UIViewController {
             return nil
         }
     }
-
     
     
     @objc func handleTapGuesture(_ tapGesture: UITapGestureRecognizer) {
