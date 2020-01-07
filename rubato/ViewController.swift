@@ -21,7 +21,9 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
+
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapGuesture(_:)))
+        view.addGestureRecognizer(tapGesture)
     }
 
     @IBAction func chooseVideo(_ sender: Any) {
@@ -75,24 +77,40 @@ class ViewController: UIViewController {
     }
     
     private func slowMotion(url: URL) -> AVPlayerItem? {
+        
         let videoAsset = AVURLAsset(url: url)
         
-        let comp = AVMutableComposition()
-        
+        let mixComp = AVMutableComposition()
+       
         let videoAssetSourceTrack = videoAsset.tracks(withMediaType: AVMediaType.video).first! as AVAssetTrack
         
-        let videoCompositionTrack = comp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid)
+        guard let track1 = mixComp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+            print("Error while adding mutable track to composition")
+            return nil
+        }
+        
+        let third = CMTimeMake(value: videoAsset.duration.value / 3, timescale: 600)
+        
+        let third1 = CMTimeRangeMake(start: CMTime.zero, duration: CMTime(seconds: 2, preferredTimescale: 600))
+        let third1Slow = CMTimeMake(value: videoAsset.duration.value / 3 / 3, timescale: 600)
+        
+        let third2 = CMTimeRangeMake(start: third1Slow, duration: third)
+        let third2Fast = CMTimeMake(value: videoAsset.duration.value / 3 * 2, timescale: 600)
+        
+        let third3 = CMTimeRangeMake(start: CMTimeAdd(third1Slow, third2Fast), duration: third)
+        let third3Slow = CMTimeMake(value: videoAsset.duration.value / 3 / 3, timescale: 600)
+        
         
         do {
-            try videoCompositionTrack?.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: CMTimeMakeWithSeconds(10, preferredTimescale: 60)), of: videoAssetSourceTrack, at: CMTime.zero)
+            try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
+            track1.scaleTimeRange(third1, toDuration: third1Slow)
+            track1.scaleTimeRange(third2, toDuration: third2Fast)
+            track1.scaleTimeRange(third3, toDuration: third3Slow)
+
+            track1.preferredTransform = videoAssetSourceTrack.preferredTransform
             
-            let videoScaleFactor = Int64(2.0)
-            let videoDuration: CMTime = videoAsset.duration
             
-            videoCompositionTrack?.scaleTimeRange(CMTimeRangeMake(start: .zero, duration: videoDuration), toDuration: CMTimeMake(value: videoDuration.value * videoScaleFactor, timescale: videoDuration.timescale))
-            videoCompositionTrack?.preferredTransform = videoAssetSourceTrack.preferredTransform
-            
-            let asset:AVAsset = comp
+            let asset:AVAsset = mixComp
             print("Applied slow motion effect!")
             return AVPlayerItem(asset: asset)
             
@@ -102,6 +120,25 @@ class ViewController: UIViewController {
         }
     }
 
+    
+    
+    @objc func handleTapGuesture(_ tapGesture: UITapGestureRecognizer) {
+        print("tap")
+        switch tapGesture.state {
+        case .ended:
+            playRecording()
+        default:
+            print("Handle other states: \(tapGesture.state)")
+        }
+    }
+    
+    func playRecording() {
+        if let player = videoPlayer {
+            // CMTime
+            player.seek(to: CMTime.zero)
+            player.play()
+        }
+    }
     
 }
 
