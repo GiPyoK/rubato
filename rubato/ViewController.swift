@@ -88,28 +88,12 @@ class ViewController: UIViewController {
             print("Error while adding mutable track to composition")
             return nil
         }
-        
-        let third = CMTimeMake(value: videoAsset.duration.value / 3, timescale: 600)
-        
-        let third1 = CMTimeRangeMake(start: CMTime.zero, duration: CMTime(seconds: 2, preferredTimescale: 600))
-        let third1Slow = CMTimeMake(value: videoAsset.duration.value / 3 / 3, timescale: 600)
-        
-        let third2 = CMTimeRangeMake(start: third1Slow, duration: third)
-        let third2Fast = CMTimeMake(value: videoAsset.duration.value / 3 * 2, timescale: 600)
-        
-        let third3 = CMTimeRangeMake(start: CMTimeAdd(third1Slow, third2Fast), duration: third)
-        let third3Slow = CMTimeMake(value: videoAsset.duration.value / 3 / 3, timescale: 600)
-        
-        
-        
 
         do {
             try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
-//            track1.scaleTimeRange(third1, toDuration: third1Slow)
-//            track1.scaleTimeRange(third2, toDuration: third2Fast)
-//            track1.scaleTimeRange(third3, toDuration: third3Slow)
             
-            normalToSlow(track: track1, startTime: .zero, endTime: CMTimeMake(value: videoAsset.duration.value / 4, timescale: 600), timescale: videoAsset.duration.timescale)
+            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: videoAsset.duration.value * 1/2, timescale: 600),finalDuration: 0.3, timescale: videoAsset.duration.timescale)
+            normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), timescale: videoAsset.duration.timescale)
             
             track1.preferredTransform = videoAssetSourceTrack.preferredTransform
             
@@ -124,20 +108,60 @@ class ViewController: UIViewController {
         }
     }
     
-    func normalToSlow(track: AVMutableCompositionTrack, startTime: CMTime, endTime: CMTime, timescale: CMTimeScale) {
-        var frame : Int64 = Int64(CMTimeGetSeconds(startTime) * Float64(timescale))
-        let singleFrame = CMTimeMake(value: 10, timescale: timescale)
+    func normalToSlow(track: AVMutableCompositionTrack, startTime: CMTime, endTime: CMTime, timescale: CMTimeScale) -> CMTime {
+        var frame: Int64 = Int64(CMTimeGetSeconds(startTime) * Float64(timescale))
         let endFrame = Int64(CMTimeGetSeconds(endTime) * Float64(timescale))
-        var start = CMTime.zero
+        let singleFrame = CMTimeMake(value: 10, timescale: timescale)
+        var start = CMTimeMake(value: frame, timescale: timescale)
+        
+        var offset: Int64 = 0
         
         while frame < endFrame {
-            let duration = CMTimeMake(value: 10 + frame , timescale: timescale)
+            let duration = CMTimeMake(value: 10 + offset , timescale: timescale)
             
             track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame), toDuration: duration)
             start = CMTimeAdd(start, duration)
             
+            offset += 1
             frame += 1
         }
+        return start
+    }
+    
+    func fastToNormal(track: AVMutableCompositionTrack, startTime: CMTime, endTime: CMTime, finalDuration: Float64, timescale: CMTimeScale)  -> CMTime {
+        var frame: Int64 = Int64(CMTimeGetSeconds(startTime) * Float64(timescale))
+        let numbOfIteration = Int64(finalDuration * Float64(timescale) / 10)
+        let singleFrame = CMTimeMake(value: 10, timescale: timescale)
+        var start = CMTimeMake(value: frame, timescale: timescale)
+        
+        let currentDuration = CMTimeGetSeconds(endTime) - CMTimeGetSeconds(startTime)
+        let totalFrames = Int64(currentDuration * Float64(timescale))
+        let dividedFrames = totalFrames / numbOfIteration
+        let extraFrames = dividedFrames - 10
+        let decreamentInterval = numbOfIteration / extraFrames
+        
+        let finalFrames =  Int64(finalDuration * Float64(timescale))
+        
+        var offset: Int64 = finalFrames != 0 ? extraFrames*2 : totalFrames/numbOfIteration/2 - 10
+        let offsetInterval = offset / numbOfIteration
+        var intervalIndex: Int64 = 1
+        
+        while frame < numbOfIteration {
+            let fastFrame = CMTimeMake(value: 10 + offset, timescale: timescale)
+            track.scaleTimeRange(CMTimeRangeMake(start: start, duration: fastFrame), toDuration: singleFrame)
+            start = CMTimeAdd(start, singleFrame)
+            
+            if decreamentInterval != 0, intervalIndex % decreamentInterval == 0 {
+                offset -= 1
+                intervalIndex = 1
+            } else if decreamentInterval == 0 {
+                offset -= offsetInterval
+            }
+            intervalIndex += 1
+            frame += 1
+        }
+        
+        return start
     }
     
     
