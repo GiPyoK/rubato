@@ -109,18 +109,8 @@ class ViewController: UIViewController {
 //            track1.scaleTimeRange(third2, toDuration: third2Fast)
 //            track1.scaleTimeRange(third3, toDuration: third3Slow)
             
-            var frame : Int64 = 0
-            let singleFrame = CMTimeMake(value: 10, timescale: 600)
-            let durationInSeconds = Int64(CMTimeGetSeconds(videoAsset.duration) * 600)
-            var start = CMTime.zero
+            normalToSlow(track: track1, startTime: .zero, endTime: CMTimeMake(value: videoAsset.duration.value / 4, timescale: 600), timescale: videoAsset.duration.timescale)
             
-            while frame < durationInSeconds {
-                let duration = CMTimeMake(value: 10 + frame , timescale: 600)
-                track1.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame), toDuration: duration)
-                start = CMTimeAdd(start, duration)
-                frame += 1
-            }
-
             track1.preferredTransform = videoAssetSourceTrack.preferredTransform
             
             
@@ -131,6 +121,22 @@ class ViewController: UIViewController {
         } catch {
             print("Error processing slow motion: \(error)")
             return nil
+        }
+    }
+    
+    func normalToSlow(track: AVMutableCompositionTrack, startTime: CMTime, endTime: CMTime, timescale: CMTimeScale) {
+        var frame : Int64 = Int64(CMTimeGetSeconds(startTime) * Float64(timescale))
+        let singleFrame = CMTimeMake(value: 10, timescale: timescale)
+        let endFrame = Int64(CMTimeGetSeconds(endTime) * Float64(timescale))
+        var start = CMTime.zero
+        
+        while frame < endFrame {
+            let duration = CMTimeMake(value: 10 + frame , timescale: timescale)
+            
+            track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame), toDuration: duration)
+            start = CMTimeAdd(start, duration)
+            
+            frame += 1
         }
     }
     
