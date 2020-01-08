@@ -92,7 +92,7 @@ class ViewController: UIViewController {
         do {
             try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
             
-            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: videoAsset.duration.value * 1/2, timescale: 600),finalDuration: 0.3, timescale: videoAsset.duration.timescale)
+            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: videoAsset.duration.value * 3/4, timescale: 600),finalDuration: 1, timescale: videoAsset.duration.timescale)
             normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), timescale: videoAsset.duration.timescale)
             
             track1.preferredTransform = videoAssetSourceTrack.preferredTransform
@@ -142,7 +142,9 @@ class ViewController: UIViewController {
         
         let finalFrames =  Int64(finalDuration * Float64(timescale))
         
-        var offset: Int64 = finalFrames != 0 ? extraFrames*2 : totalFrames/numbOfIteration/2 - 10
+        var offset: Int64 = (decreamentInterval != 0 && decreamentInterval != 1) ? extraFrames*2 : totalFrames/(numbOfIteration/2) - 10
+        //var offset: Int64 = totalFrames/(numbOfIteration/2) - 10
+
         let offsetInterval = offset / numbOfIteration
         var intervalIndex: Int64 = 1
         
@@ -157,6 +159,7 @@ class ViewController: UIViewController {
             } else if decreamentInterval == 0 {
                 offset -= offsetInterval
             }
+            //offset -= offsetInterval
             intervalIndex += 1
             frame += 1
         }
@@ -199,17 +202,19 @@ extension ViewController: UIImagePickerControllerDelegate, UINavigationControlle
                 // TODO: self.presentInformationalAlertController(title: "Error", message: "Please choose a video")
                 return
         }
-        print("Video URL: \(url)")
+        playerLayer?.removeFromSuperlayer()
                 
         videoPlayer = AVPlayer(playerItem: slowMotion(url: url))
         
         playerLayer = AVPlayerLayer(player: videoPlayer)
-        var topRect = view.bounds
-        topRect.size.height = topRect.height / 1.5
-        topRect.size.width = topRect.width / 1.5
-        topRect.origin.y = view.safeAreaInsets.top
-        playerLayer?.frame = topRect
-        view.layer.addSublayer(playerLayer!)
+//        var topRect = videoView.bounds
+//        topRect.size.height = topRect.height / 1.5
+//        topRect.size.width = topRect.width / 1.5
+//        topRect.origin.y = view.safeAreaInsets.top
+        playerLayer?.frame = videoView.bounds
+        playerLayer?.videoGravity = .resizeAspect
+        videoView.layer.insertSublayer(playerLayer!, at: 0)
+//        view.layer.addSublayer(playerLayer!)
         
         videoPlayer.play()
     }

@@ -13,6 +13,7 @@
 		A699A0EB23BAD7E000A32A30 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A699A0E923BAD7E000A32A30 /* Main.storyboard */; };
 		A699A0ED23BAD7E100A32A30 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A699A0EC23BAD7E100A32A30 /* Assets.xcassets */; };
 		A699A0F023BAD7E100A32A30 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A699A0EE23BAD7E100A32A30 /* LaunchScreen.storyboard */; };
+		A699A0FA23C5916E00A32A30 /* Dancin.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A699A0F923C5916E00A32A30 /* Dancin.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		A699A0EC23BAD7E100A32A30 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A699A0EF23BAD7E100A32A30 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A699A0F123BAD7E100A32A30 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A699A0F923C5916E00A32A30 /* Dancin.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Dancin.mp3; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +65,7 @@
 				A699A0EC23BAD7E100A32A30 /* Assets.xcassets */,
 				A699A0EE23BAD7E100A32A30 /* LaunchScreen.storyboard */,
 				A699A0F123BAD7E100A32A30 /* Info.plist */,
+				A699A0F923C5916E00A32A30 /* Dancin.mp3 */,
 			);
 			path = rubato;
 			sourceTree = "<group>";
@@ -128,6 +131,7 @@
 				A699A0F023BAD7E100A32A30 /* LaunchScreen.storyboard in Resources */,
 				A699A0ED23BAD7E100A32A30 /* Assets.xcassets in Resources */,
 				A699A0EB23BAD7E000A32A30 /* Main.storyboard in Resources */,
+				A699A0FA23C5916E00A32A30 /* Dancin.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
