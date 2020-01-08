@@ -103,8 +103,8 @@ class ViewController: UIViewController {
         do {
             try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
             
-            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: videoAsset.duration.value * 3/4, timescale: 600),finalDuration: 1, timescale: videoAsset.duration.timescale)
-            normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), timescale: videoAsset.duration.timescale)
+            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 2.0/3.0), timescale: 600),finalDuration: 1, timescale: videoAsset.duration.timescale)
+            normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value)), timescale: 600), timescale: videoAsset.duration.timescale)
             
             track1.preferredTransform = videoAssetSourceTrack.preferredTransform
             
