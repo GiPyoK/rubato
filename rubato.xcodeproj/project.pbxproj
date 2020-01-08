@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		2930FF15D2A61833C57523C1 /* Pods_rubato.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BC7C3E4B3409C45D7BDE8F80 /* Pods_rubato.framework */; };
 		A699A0E423BAD7E000A32A30 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A699A0E323BAD7E000A32A30 /* AppDelegate.swift */; };
 		A699A0E623BAD7E000A32A30 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A699A0E523BAD7E000A32A30 /* SceneDelegate.swift */; };
 		A699A0E823BAD7E000A32A30 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A699A0E723BAD7E000A32A30 /* ViewController.swift */; };
@@ -17,6 +18,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		134721C69491D42E85C13F6E /* Pods-rubato.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-rubato.release.xcconfig"; path = "Target Support Files/Pods-rubato/Pods-rubato.release.xcconfig"; sourceTree = "<group>"; };
+		370D32D0FAA55CFF0BEBD395 /* Pods-rubato.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-rubato.debug.xcconfig"; path = "Target Support Files/Pods-rubato/Pods-rubato.debug.xcconfig"; sourceTree = "<group>"; };
 		A699A0E023BAD7E000A32A30 /* rubato.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = rubato.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A699A0E323BAD7E000A32A30 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A699A0E523BAD7E000A32A30 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -26,6 +29,7 @@
 		A699A0EF23BAD7E100A32A30 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A699A0F123BAD7E100A32A30 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A699A0F923C5916E00A32A30 /* Dancin.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Dancin.mp3; sourceTree = "<group>"; };
+		BC7C3E4B3409C45D7BDE8F80 /* Pods_rubato.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_rubato.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -33,17 +37,30 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2930FF15D2A61833C57523C1 /* Pods_rubato.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1FD25A66472C6303EDD40961 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				370D32D0FAA55CFF0BEBD395 /* Pods-rubato.debug.xcconfig */,
+				134721C69491D42E85C13F6E /* Pods-rubato.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		A699A0D723BAD7E000A32A30 = {
 			isa = PBXGroup;
 			children = (
 				A699A0E223BAD7E000A32A30 /* rubato */,
 				A699A0E123BAD7E000A32A30 /* Products */,
+				1FD25A66472C6303EDD40961 /* Pods */,
+				F583C997717DB3DAC35E0FFC /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -70,6 +87,14 @@
 			path = rubato;
 			sourceTree = "<group>";
 		};
+		F583C997717DB3DAC35E0FFC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				BC7C3E4B3409C45D7BDE8F80 /* Pods_rubato.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -77,9 +102,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = A699A0F423BAD7E100A32A30 /* Build configuration list for PBXNativeTarget "rubato" */;
 			buildPhases = (
+				CE571A418B3887301E324089 /* [CP] Check Pods Manifest.lock */,
 				A699A0DC23BAD7E000A32A30 /* Sources */,
 				A699A0DD23BAD7E000A32A30 /* Frameworks */,
 				A699A0DE23BAD7E000A32A30 /* Resources */,
+				71666EDF2656A9297202DAC5 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -136,6 +163,48 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		71666EDF2656A9297202DAC5 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-rubato/Pods-rubato-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-rubato/Pods-rubato-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-rubato/Pods-rubato-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		CE571A418B3887301E324089 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-rubato-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A699A0DC23BAD7E000A32A30 /* Sources */ = {
@@ -286,6 +355,7 @@
 		};
 		A699A0F523BAD7E100A32A30 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 370D32D0FAA55CFF0BEBD395 /* Pods-rubato.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
@@ -304,6 +374,7 @@
 		};
 		A699A0F623BAD7E100A32A30 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 134721C69491D42E85C13F6E /* Pods-rubato.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;

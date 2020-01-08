@@ -11,10 +11,12 @@ import MobileCoreServices
 import AVFoundation
 import MediaPlayer
 import StoreKit
+import FDWaveformView
 
 class ViewController: UIViewController {
 
     @IBOutlet weak var videoView: UIView!
+    @IBOutlet weak var audioView: UIView!
     
     var videoPlayer: AVPlayer!
     var playerLayer: AVPlayerLayer?
@@ -24,6 +26,15 @@ class ViewController: UIViewController {
 
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapGuesture(_:)))
         view.addGestureRecognizer(tapGesture)
+        
+        let url = Bundle.main.url(forResource: "Dancin", withExtension: "mp3")
+        let waveform = FDWaveformView()
+        waveform.audioURL = url
+        waveform.doesAllowScroll = true
+        waveform.doesAllowStretch = true
+        waveform.doesAllowScrubbing = true
+        waveform.frame = audioView.bounds
+        audioView.insertSubview(waveform, at: 0)
     }
 
     @IBAction func chooseVideo(_ sender: Any) {
@@ -232,7 +243,6 @@ extension ViewController: MPMediaPickerControllerDelegate {
             
             let url = song.value(forProperty: MPMediaItemPropertyAssetURL) as? URL
             
-            print("Audio URL: \(url)")
         }
     }
     
