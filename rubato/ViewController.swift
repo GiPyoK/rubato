@@ -103,8 +103,10 @@ class ViewController: UIViewController {
         do {
             try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
             
-            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 2.0/3.0), timescale: 600),finalDuration: 1, timescale: videoAsset.duration.timescale)
-            normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value)), timescale: 600), timescale: videoAsset.duration.timescale)
+//            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 2.0/3.0), timescale: 600),finalDuration: 1, timescale: videoAsset.duration.timescale)
+            
+            let start = slowToFast(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 0.5), timescale: 600), finalDuration: 2.0, timescale: 600)
+            normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), timescale: 600)
             
             track1.preferredTransform = videoAssetSourceTrack.preferredTransform
             
@@ -143,17 +145,20 @@ class ViewController: UIViewController {
         track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame),
                              toDuration: CMTimeMake(value: 10 + slowMoDuration + leftOverSlowMoFrames, timescale: timescale))
         start = CMTimeAdd(start, CMTimeMake(value: 10 + slowMoDuration + leftOverSlowMoFrames, timescale: timescale))
-        finalSlowMoFrames -= slowMoDuration
+        finalSlowMoFrames -= (10 + slowMoDuration + leftOverSlowMoFrames)
         slowMoDuration -= 1
         numOfSlowMoIteration -= 1
         
         // slow mo loop
         while finalSlowMoFrames > 0 {
             if requiredFrames <= finalSlowMoFrames {
+                if finalSlowMoFrames < slowMoDuration + 10 {
+                    slowMoDuration = finalSlowMoFrames - 10
+                }
                 track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame),
                                      toDuration: CMTimeMake(value: 10 + slowMoDuration, timescale: timescale))
                 start = CMTimeAdd(start, CMTimeMake(value: 10 + slowMoDuration, timescale: timescale))
-                finalSlowMoFrames -= slowMoDuration
+                finalSlowMoFrames -= (10 + slowMoDuration)
                 if requiredFrames > finalSlowMoFrames {
                     slowMoDuration -= 1
                     numOfSlowMoIteration -= 1
@@ -164,7 +169,7 @@ class ViewController: UIViewController {
                     slowMoDuration = Int64(Double(slowMoDuration) / 2.0)
                     numOfSlowMoIteration = Int64(Double(numOfSlowMoIteration) / 2.0)
                     requiredFrames = calcFrames(duration: slowMoDuration, iteration: numOfSlowMoIteration)
-                } while requiredFrames <= finalSlowMoFrames
+                } while requiredFrames > finalSlowMoFrames
             }
         }
         
@@ -187,10 +192,16 @@ class ViewController: UIViewController {
         var iteration: Int64 = 0
         
         while iteration < numOfFastMoIteration {
+            if iteration == numOfFastMoIteration - 1 {
+                if originalFastMoFrames > 10 + increament {
+                    increament = originalFastMoFrames - 10
+                }
+            }
             track.scaleTimeRange(CMTimeRangeMake(start: start, duration: CMTimeMake(value: 10 + increament, timescale: timescale)),
                                  toDuration: iteration == numOfFastMoIteration - 1 ?
                                         CMTimeMake(value: 10 + leftOverFastMoFrames, timescale: timescale) : singleFrame)
-            start = CMTimeAdd(start, singleFrame)
+            start = CMTimeAdd(start, iteration == numOfFastMoIteration - 1 ?
+                                    CMTimeMake(value: 10 + leftOverFastMoFrames, timescale: timescale) : singleFrame)
             originalFastMoFrames -= (10 + increament)
             
             if originalFastMoFrames <= 0 { // if the loop fast motioned all frames, then early exit
