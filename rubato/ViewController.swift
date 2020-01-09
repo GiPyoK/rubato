@@ -104,9 +104,11 @@ class ViewController: UIViewController {
             try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
             
 //            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 2.0/3.0), timescale: 600),finalDuration: 1, timescale: videoAsset.duration.timescale)
+//            normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), timescale: 600)
             
-            let start = slowToFast(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 0.5), timescale: 600), finalDuration: 2.0, timescale: 600)
-            normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), timescale: 600)
+            let start = fastToSlow(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 0.5), timescale: 600), finalDuration: 1.0, timescale: 600)
+            slowToFast(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), finalDuration: 1.0, timescale: 600)
+            
             
             track1.preferredTransform = videoAssetSourceTrack.preferredTransform
             
@@ -139,7 +141,7 @@ class ViewController: UIViewController {
         let leftOverSlowMoFrames: Int64 = originalSlowMoFrames % 10 // if there are 0.x frames, add them to the first iteration
         var slowMoDuration: Int64 = 40 // slow down by factor of 4
         
-        var start = CMTimeMake(value: Int64(CMTimeGetSeconds(startTime) * Float64(timescale)), timescale: timescale)
+        var start = startTime
         var requiredFrames = calcFrames(duration: slowMoDuration + leftOverSlowMoFrames, iteration: numOfSlowMoIteration)
         
         track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame),
@@ -217,6 +219,107 @@ class ViewController: UIViewController {
             }
         }
         return start
+    }
+    
+    func fastToSlow(track: AVMutableCompositionTrack, startTime: CMTime, endTime: CMTime, finalDuration: Float64, timescale: CMTimeScale) -> CMTime {
+        // Number of frames
+        let originalNumOfFrames = Int64((CMTimeGetSeconds(endTime) - CMTimeGetSeconds(startTime)) * Float64(timescale))
+        let finalNumOfFrames = Int64(finalDuration * Float64(timescale))
+        
+        // slow mo constant factors
+        let slowMoWillApply: Float64 = 0.1
+        let slowMoApplied: Float64 = 2.0/3.0
+        let singleFrame = CMTimeMake(value: 10, timescale: timescale)
+        
+        // slow mo variables
+        let originalSlowMoFrames: Int64 = Int64(Float64(originalNumOfFrames) * slowMoWillApply)
+        var finalSlowMoFrames: Int64 = Int64(Float64(finalNumOfFrames) * slowMoApplied)
+        // loop
+        var numOfSlowMoIteration: Int64 = originalSlowMoFrames / 10
+        let leftOverSlowMoFrames: Int64 = originalSlowMoFrames % 10 // if there are 0.x frames, add them to the first iteration
+        var slowMoDuration: Int64 = 40 // slow down by factor of 4
+        
+        // start from the end time and work backwards
+        var start = CMTimeSubtract(endTime, singleFrame)
+        var requiredFrames = calcFrames(duration: slowMoDuration + leftOverSlowMoFrames, iteration: numOfSlowMoIteration)
+        
+        track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame),
+                             toDuration: CMTimeMake(value: 10 + slowMoDuration + leftOverSlowMoFrames, timescale: timescale))
+        start = CMTimeSubtract(start, singleFrame)
+        finalSlowMoFrames -= (10 + slowMoDuration + leftOverSlowMoFrames)
+        slowMoDuration -= 1
+        numOfSlowMoIteration -= 1
+        
+        // slow mo loop
+        while finalSlowMoFrames > 0 {
+            if requiredFrames <= finalSlowMoFrames {
+                if finalSlowMoFrames < slowMoDuration + 10 {
+                    slowMoDuration = finalSlowMoFrames - 10
+                }
+                track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame),
+                                     toDuration: CMTimeMake(value: 10 + slowMoDuration, timescale: timescale))
+                start = CMTimeSubtract(start, singleFrame)
+                finalSlowMoFrames -= (10 + slowMoDuration)
+                if requiredFrames > finalSlowMoFrames {
+                    slowMoDuration -= 1
+                    numOfSlowMoIteration -= 1
+                }
+                continue
+            } else {
+                repeat {
+                    slowMoDuration = Int64(Double(slowMoDuration) / 2.0)
+                    numOfSlowMoIteration = Int64(Double(numOfSlowMoIteration) / 2.0)
+                    requiredFrames = calcFrames(duration: slowMoDuration, iteration: numOfSlowMoIteration)
+                } while requiredFrames > finalSlowMoFrames
+            }
+        }
+        
+        // fast mo constant factors
+        let fastMoWillApply: Float64 = 1.0 - slowMoWillApply
+        let fastMoApplied: Float64 = 1.0 - slowMoApplied
+        
+        // fast mo variables
+        var originalFastMoFrames: Int64 = Int64(Float64(originalNumOfFrames) * fastMoWillApply)
+        let finalFastMoFrames: Int64 = Int64(Float64(finalNumOfFrames) * fastMoApplied)
+        // loop
+        let numOfFastMoIteration: Int64 = finalFastMoFrames / 10
+        let leftOverFastMoFrames: Int64 = finalFastMoFrames % 10 // if there are 0.x frames, add them to the last iteration
+        let fastMoPrep: Float64 = Double(originalFastMoFrames) / (Double(numOfFastMoIteration) / 2.0) - 20.0
+        let fastMoIncreament: Int64 = Int64(fastMoPrep / Float64(numOfFastMoIteration))
+        let fastMoIncreamentFloat: Float64 = fastMoPrep / Float64(numOfFastMoIteration)
+        
+        var increament: Int64 = 0
+        var increamentFloat: Float64 = 0
+        var iteration: Int64 = 0
+        
+        start = CMTimeSubtract(start, CMTimeMake(value: 10 + increament, timescale: timescale))
+        
+        while iteration < numOfFastMoIteration {
+            if iteration == numOfFastMoIteration - 1 {
+                if originalFastMoFrames > 10 + increament {
+                    increament = originalFastMoFrames - 10
+                }
+            }
+            track.scaleTimeRange(CMTimeRangeMake(start: start, duration: CMTimeMake(value: 10 + increament, timescale: timescale)),
+                                 toDuration: iteration == numOfFastMoIteration - 1 ?
+                                    CMTimeMake(value: 10 + leftOverFastMoFrames, timescale: timescale) : singleFrame)
+            start = CMTimeSubtract(start, CMTimeMake(value: 10 + increament, timescale: timescale))
+            originalFastMoFrames -= (10 + increament)
+            
+            if originalFastMoFrames <= 0 { // if the loop fast motioned all frames, then early exit
+                break
+            }
+            
+            increament += fastMoIncreament
+            increamentFloat += fastMoIncreamentFloat
+            iteration += 1
+            
+            while increament < Int64(increamentFloat) {
+                increament += 1
+            }
+        }
+        
+        return CMTimeAdd(start, CMTimeMake(value: finalNumOfFrames, timescale: timescale))
     }
     
     func calcFrames(duration: Int64, iteration: Int64) -> Int64{
