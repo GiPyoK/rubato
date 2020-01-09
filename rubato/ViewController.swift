@@ -17,9 +17,16 @@ class ViewController: UIViewController {
 
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var audioView: UIView!
+    @IBOutlet weak var markerView: UIView!
+    @IBOutlet weak var videoSlider: UISlider!
     
+    // video player
     var videoPlayer: AVPlayer!
     var playerLayer: AVPlayerLayer?
+    
+    // marker
+    var videoMarkers: [Marker] = []
+    var audioMarkers: [Marker] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,11 +34,12 @@ class ViewController: UIViewController {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTapGuesture(_:)))
         view.addGestureRecognizer(tapGesture)
         
-        let url = Bundle.main.url(forResource: "Dancin", withExtension: "mp3")
+        // audio waveform
+        let url = Bundle.main.url(forResource: "Dubstep1", withExtension: "mp3")
         let waveform = FDWaveformView()
         waveform.audioURL = url
-        waveform.doesAllowScroll = true
-        waveform.doesAllowStretch = true
+        waveform.doesAllowScroll = false
+        waveform.doesAllowStretch = false
         waveform.doesAllowScrubbing = true
         waveform.frame = audioView.bounds
         audioView.insertSubview(waveform, at: 0)
@@ -102,9 +110,6 @@ class ViewController: UIViewController {
 
         do {
             try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
-            
-//            let start = fastToNormal(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 2.0/3.0), timescale: 600),finalDuration: 1, timescale: videoAsset.duration.timescale)
-//            normalToSlow(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), timescale: 600)
             
             let start = fastToSlow(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 0.5), timescale: 600), finalDuration: 1.0, timescale: 600)
             slowToFast(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), finalDuration: 1.0, timescale: 600)
@@ -326,66 +331,6 @@ class ViewController: UIViewController {
         return Int64(Float64(duration + 10) * Float64(iteration) / 2.0)
     }
     
-    func normalToSlow(track: AVMutableCompositionTrack, startTime: CMTime, endTime: CMTime, timescale: CMTimeScale) -> CMTime {
-        var frame: Int64 = Int64(CMTimeGetSeconds(startTime) * Float64(timescale))
-        let endFrame = Int64(CMTimeGetSeconds(endTime) * Float64(timescale))
-        let singleFrame = CMTimeMake(value: 10, timescale: timescale)
-        var start = CMTimeMake(value: frame, timescale: timescale)
-        
-        var offset: Int64 = 0
-        
-        while frame < endFrame {
-            let duration = CMTimeMake(value: 10 + offset , timescale: timescale)
-            
-            track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame), toDuration: duration)
-            start = CMTimeAdd(start, duration)
-            
-            offset += 1
-            frame += 1
-        }
-        return start
-    }
-    
-    func fastToNormal(track: AVMutableCompositionTrack, startTime: CMTime, endTime: CMTime, finalDuration: Float64, timescale: CMTimeScale)  -> CMTime {
-        var frame: Int64 = Int64(CMTimeGetSeconds(startTime) * Float64(timescale))
-        let numbOfIteration = Int64(finalDuration * Float64(timescale) / 10)
-        let singleFrame = CMTimeMake(value: 10, timescale: timescale)
-        var start = CMTimeMake(value: frame, timescale: timescale)
-        
-        let currentDuration = CMTimeGetSeconds(endTime) - CMTimeGetSeconds(startTime)
-        let totalFrames = Int64(currentDuration * Float64(timescale))
-        let dividedFrames = totalFrames / numbOfIteration
-        let extraFrames = dividedFrames - 10
-        let decreamentInterval = numbOfIteration / extraFrames
-        
-        let finalFrames =  Int64(finalDuration * Float64(timescale))
-        
-        var offset: Int64 = (decreamentInterval != 0 && decreamentInterval != 1) ? extraFrames*2 : totalFrames/(numbOfIteration/2) - 10
-        //var offset: Int64 = totalFrames/(numbOfIteration/2) - 10
-
-        let offsetInterval = offset / numbOfIteration
-        var intervalIndex: Int64 = 1
-        
-        while frame < numbOfIteration {
-            let fastFrame = CMTimeMake(value: 10 + offset, timescale: timescale)
-            track.scaleTimeRange(CMTimeRangeMake(start: start, duration: fastFrame), toDuration: singleFrame)
-            start = CMTimeAdd(start, singleFrame)
-            
-            if decreamentInterval != 0, intervalIndex % decreamentInterval == 0 {
-                offset -= 1
-                intervalIndex = 1
-            } else if decreamentInterval == 0 {
-                offset -= offsetInterval
-            }
-            //offset -= offsetInterval
-            intervalIndex += 1
-            frame += 1
-        }
-        
-        return start
-    }
-    
-    
     @objc func handleTapGuesture(_ tapGesture: UITapGestureRecognizer) {
         print("tap")
         switch tapGesture.state {
@@ -402,6 +347,40 @@ class ViewController: UIViewController {
             player.seek(to: CMTime.zero)
             player.play()
         }
+    }
+    
+    // MARK: - IBActions
+    @IBAction func videoSliderValueChanged(_ sender: Any) {
+        
+    }
+    
+    @IBAction func addVideoMarker(_ sender: Any) {
+        let markerPosition = videoSlider.value
+        guard let marker = Marker(position: markerPosition as NSNumber) else { return }
+        videoMarkers.append(marker)
+        
+        let imageView = UIImageView(image: marker.image)
+        let size = markerView.frame.height
+        let xPosition = (markerView.frame.width * CGFloat(markerPosition)) - size/2.0
+        
+        imageView.frame = CGRect(x: xPosition, y: -size, width: size, height: size)
+        imageView.tag = videoMarkers.count
+        markerView.addSubview(imageView)
+        markerView.bringSubviewToFront(imageView)
+        
+    }
+    
+    @IBAction func removeVideoMarker(_ sender: Any) {
+        if !videoMarkers.isEmpty {
+            markerView.viewWithTag(videoMarkers.count)?.removeFromSuperview()
+            videoMarkers.removeLast()
+        }
+    }
+    
+    @IBAction func removeAudioMarker(_ sender: Any) {
+        
+    }
+    @IBAction func addAudioMarker(_ sender: Any) {
     }
     
 }
@@ -423,16 +402,10 @@ extension ViewController: UIImagePickerControllerDelegate, UINavigationControlle
         playerLayer?.removeFromSuperlayer()
                 
         videoPlayer = AVPlayer(playerItem: slowMotion(url: url))
-        
         playerLayer = AVPlayerLayer(player: videoPlayer)
-//        var topRect = videoView.bounds
-//        topRect.size.height = topRect.height / 1.5
-//        topRect.size.width = topRect.width / 1.5
-//        topRect.origin.y = view.safeAreaInsets.top
         playerLayer?.frame = videoView.bounds
         playerLayer?.videoGravity = .resizeAspect
         videoView.layer.insertSublayer(playerLayer!, at: 0)
-//        view.layer.addSublayer(playerLayer!)
         
         videoPlayer.play()
     }
