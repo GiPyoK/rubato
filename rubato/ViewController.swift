@@ -15,13 +15,19 @@ import FDWaveformView
 
 class ViewController: UIViewController {
 
+    // video outlet
     @IBOutlet weak var videoView: UIView!
-    @IBOutlet weak var audioView: UIView!
     @IBOutlet weak var videoMarkerView: UIView!
-    @IBOutlet weak var audioMarkerView: UIView!
     @IBOutlet weak var videoSlider: UISlider!
     @IBOutlet weak var videoMarkerCount: UILabel!
+    
+    // audio outlet
+    @IBOutlet weak var audioView: UIView!
+    @IBOutlet weak var audioMarkerView: UIView!
     @IBOutlet weak var audioMarkerCount: UILabel!
+    @IBOutlet weak var playButton: UIButton!
+    @IBOutlet weak var audioTimeElapsedLabel: UILabel!
+    @IBOutlet weak var audioTimeRemainingLabel: UILabel!
     
     // video
     var videoPlayer: AVPlayer!
@@ -29,10 +35,23 @@ class ViewController: UIViewController {
     
     // audio
     var waveform = FDWaveformView()
+    var audioPlayer: AVAudioPlayer?
+    var timer: Timer?
+    var isPlaying: Bool {
+        return audioPlayer?.isPlaying ?? false
+    }
     
     // marker
     var videoMarkers: [Marker] = []
     var audioMarkers: [Marker] = []
+    
+    private lazy var timeFormatter: DateComponentsFormatter = {
+        let formatting = DateComponentsFormatter()
+        formatting.unitsStyle = .positional
+        formatting.zeroFormattingBehavior = .pad
+        formatting.allowedUnits = [.minute, .second]
+        return formatting
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -43,16 +62,77 @@ class ViewController: UIViewController {
         // audio waveform
         guard let url = Bundle.main.url(forResource: "Dubstep2", withExtension: "mp3") else { return }
         waveform.audioURL = url
+        waveform.delegate = self
         waveform.doesAllowScroll = false
         waveform.doesAllowStretch = false
         waveform.doesAllowScrubbing = true
-        
         view.addSubview(waveform)
         waveform.translatesAutoresizingMaskIntoConstraints = false
         waveform.topAnchor.constraint(equalTo: audioView.topAnchor).isActive = true
         waveform.leadingAnchor.constraint(equalTo: audioView.leadingAnchor).isActive = true
         waveform.trailingAnchor.constraint(equalTo: audioView.trailingAnchor).isActive = true
         waveform.heightAnchor.constraint(equalTo: audioView.heightAnchor).isActive = true
+        
+        // audio play
+        do {
+            audioPlayer = try AVAudioPlayer(contentsOf: url)
+        } catch {
+            print("Error initializing AVAudioPlayer \(error)")
+        }
+        audioTimeElapsedLabel.font = UIFont.monospacedDigitSystemFont(ofSize: audioTimeElapsedLabel.font.pointSize, weight: .regular)
+        audioTimeRemainingLabel.font = UIFont.monospacedDigitSystemFont(ofSize: audioTimeRemainingLabel.font.pointSize, weight: .regular)
+
+        audioPlayer?.delegate = self
+        
+        updateViews()
+    }
+    
+    private func updateViews() {
+        guard let audioPlayer = audioPlayer else { return }
+        playButton.isSelected = isPlaying
+        
+        let elapsedTime = audioPlayer.currentTime
+        audioTimeElapsedLabel.text = timeFormatter.string(from: elapsedTime)
+        
+        let totalTime = audioPlayer.duration
+        var endIndex: Int = 0
+        if !totalTime.isZero {
+            endIndex = Int(Double(elapsedTime) / Double(audioPlayer.duration) * Double(waveform.totalSamples))
+        }
+        waveform.highlightedSamples = 0..<endIndex
+        audioTimeRemainingLabel.text = timeFormatter.string(from: totalTime - elapsedTime)
+        
+        if isPlaying {
+            playButton.isSelected = true
+        } else {
+            playButton.isSelected = false
+        }
+    }
+    
+    private func playPause() {
+        if isPlaying {
+            audioPlayer?.pause()
+            cancelTimer()
+            updateViews()
+        } else {
+            audioPlayer?.play()
+            startTimer()
+            updateViews()
+        }
+    }
+    
+    private func startTimer() {
+        cancelTimer()
+        timer = Timer.scheduledTimer(timeInterval: 0.03, target: self, selector: #selector(updateTimer(timer:)), userInfo: nil, repeats: true)
+    }
+    
+    private func cancelTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+    
+    @objc private func updateTimer(timer: Timer) {
+        updateViews()
     }
 
     private func presentVideoPickerController() {
@@ -336,6 +416,7 @@ class ViewController: UIViewController {
         return Int64(Float64(duration + 10) * Float64(iteration) / 2.0)
     }
     
+    // MARK: - Tab Guesture
     @objc func handleTapGuesture(_ tapGesture: UITapGestureRecognizer) {
         print("tap")
         switch tapGesture.state {
@@ -356,8 +437,7 @@ class ViewController: UIViewController {
     
     // MARK: - IBActions
     @IBAction func chooseVideo(_ sender: Any) {
-        //        presentVideoPickerController()
-        getAuthorizationForAppleMusic()
+        presentVideoPickerController()
     }
     
     @IBAction func videoSliderValueChanged(_ sender: Any) {
@@ -415,6 +495,9 @@ class ViewController: UIViewController {
         }
     }
     
+    @IBAction func playButtonPressed(_ sender: Any) {
+        playPause()
+    }
 }
 
 
@@ -460,5 +543,29 @@ extension ViewController: MPMediaPickerControllerDelegate {
     
     func mediaPickerDidCancel(_ mediaPicker: MPMediaPickerController) {
         mediaPicker.dismiss(animated: true, completion: nil)
+    }
+}
+
+extension ViewController: FDWaveformViewDelegate {
+    func waveformDidEndScrubbing(_ waveformView: FDWaveformView) {
+        if let audioPlayer = audioPlayer {
+            if let highlightedSamples = waveformView.highlightedSamples {
+                audioPlayer.currentTime = Double(highlightedSamples.endIndex) / Double(waveformView.totalSamples) * audioPlayer.duration
+            } else {
+                audioPlayer.currentTime = 0
+            }
+        }
+    }
+}
+
+extension ViewController: AVAudioPlayerDelegate {
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        if let error = error {
+            print("Audio playback error: \(error)")
+        }
+    }
+    
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        updateViews()
     }
 }
