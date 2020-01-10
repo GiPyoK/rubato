@@ -548,6 +548,17 @@ class ViewController: UIViewController {
     // MARK: - IBActions
     @IBAction func chooseVideo(_ sender: Any) {
         presentVideoPickerController()
+        for markerView in videoMarkerView.subviews {
+            markerView.removeFromSuperview()
+        }
+        videoMarkers = []
+        videoMarkerCount.text = "Marker: \(videoMarkers.count)"
+        
+        for markerView in audioMarkerView.subviews {
+            markerView.removeFromSuperview()
+        }
+        audioMarkers = []
+        audioMarkerCount.text = "Marker: \(audioMarkers.count)"
     }
     @IBAction func applyEffectsAndPlay(_ sender: Any) {
         applyEffects()
@@ -562,7 +573,7 @@ class ViewController: UIViewController {
     
     @IBAction func addVideoMarker(_ sender: Any) {
         let markerPosition = videoSlider.value / videoSlider.maximumValue
-        guard let marker = Marker(position: markerPosition as NSNumber) else { return }
+        guard let marker = Marker(position: Float64(markerPosition)) else { return }
         videoMarkers.append(marker)
         
         let imageView = UIImageView(image: marker.image)
@@ -589,7 +600,7 @@ class ViewController: UIViewController {
             return
         }
         let markerPosition: Float = (waveform.highlightedSamples != nil ? Float(waveform.highlightedSamples!.endIndex) : 0.0) / Float(waveform.totalSamples)
-        guard let marker = Marker(position: markerPosition as NSNumber) else { return }
+        guard let marker = Marker(position: Float64(markerPosition)) else { return }
         audioMarkers.append(marker)
 
         let imageView = UIImageView(image: marker.image)
@@ -645,7 +656,7 @@ extension ViewController: MPMediaPickerControllerDelegate {
             guard let song = selectedSongs.first else { return }
             
             let url = song.value(forProperty: MPMediaItemPropertyAssetURL) as? URL
-            print(url)
+            // print(url)
         }
     }
     

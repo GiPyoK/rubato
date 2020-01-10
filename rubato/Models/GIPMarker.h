@@ -15,6 +15,6 @@ NS_SWIFT_NAME(Marker)
 @property Float64 position;
 @property UIImage *image;
 
-- (instancetype)initWithPosition:(NSNumber *)position;
+- (instancetype)initWithPosition:(Float64)position;
 
 @end
