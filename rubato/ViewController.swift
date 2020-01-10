@@ -20,6 +20,8 @@ class ViewController: UIViewController {
     @IBOutlet weak var videoMarkerView: UIView!
     @IBOutlet weak var videoSlider: UISlider!
     @IBOutlet weak var videoMarkerCount: UILabel!
+    @IBOutlet weak var videoTimeElapsedLabel: UILabel!
+    @IBOutlet weak var videoTimeRemainingLabel: UILabel!
     
     // audio outlet
     @IBOutlet weak var audioView: UIView!
@@ -30,8 +32,34 @@ class ViewController: UIViewController {
     @IBOutlet weak var audioTimeRemainingLabel: UILabel!
     
     // video
-    var videoPlayer: AVPlayer!
+    var videoPlayer: AVPlayer?
     var playerLayer: AVPlayerLayer?
+    var videoURL: URL? {
+        didSet {
+            playerLayer?.removeFromSuperlayer()
+            videoPlayer = AVPlayer(url: videoURL!)
+            playerLayer = AVPlayerLayer(player: videoPlayer)
+            playerLayer!.frame = videoView.bounds
+            playerLayer!.videoGravity = .resizeAspect
+            videoView.layer.insertSublayer(playerLayer!, at: 0)
+            if let item = videoPlayer?.currentItem {
+                videoAsset = item.asset
+            }
+        }
+    }
+    var videoAsset: AVAsset? {
+        didSet {
+            videoSlider.minimumValue = 0
+            videoSlider.maximumValue = Float(CMTimeGetSeconds(videoAsset!.duration))
+            videoSlider.value = 0
+            
+            timescale = videoAsset!.duration.timescale
+        }
+    }
+    var isSeekInProgress = false
+    var chaseTime = CMTime.zero
+    var playerCurrentItemStatus:AVPlayerItem.Status = .unknown
+    var timescale: CMTimeScale?
     
     // audio
     var waveform = FDWaveformView()
@@ -84,10 +112,63 @@ class ViewController: UIViewController {
 
         audioPlayer?.delegate = self
         
-        updateViews()
+        // video play
+        videoTimeElapsedLabel.font = UIFont.monospacedDigitSystemFont(ofSize: videoTimeElapsedLabel.font.pointSize, weight: .regular)
+        videoTimeRemainingLabel.font = UIFont.monospacedDigitSystemFont(ofSize: videoTimeRemainingLabel.font.pointSize, weight: .regular)
+        
+        updateAudioViews()
+        updateVideoViews()
     }
     
-    private func updateViews() {
+    private func updateVideoViews() {
+        guard let videoAsset = videoAsset else {
+            videoSlider.value = 0
+            videoTimeElapsedLabel.text = timeFormatter.string(from: 0)
+            videoTimeRemainingLabel.text = timeFormatter.string(from: 0)
+            return
+        }
+        
+        let sliderPercentage: Double = Double(videoSlider.value / videoSlider.maximumValue)
+        let totalTime: TimeInterval = CMTimeGetSeconds(videoAsset.duration)
+        let elapsedTime: TimeInterval = totalTime * sliderPercentage
+        videoTimeElapsedLabel.text = timeFormatter.string(from: elapsedTime)
+        videoTimeRemainingLabel.text = timeFormatter.string(from: totalTime - elapsedTime)
+    }
+    
+    func stopPlayingAndSeekSmoothlyToTime(newChaseTime:CMTime) {
+        if let player = videoPlayer {
+            player.pause()
+            if CMTimeCompare(newChaseTime, chaseTime) != 0 {
+                chaseTime = newChaseTime;
+                if !isSeekInProgress {
+                    trySeekToChaseTime()
+                }
+            }
+        }
+    }
+    
+    func trySeekToChaseTime() {
+        actuallySeekToTime()
+    }
+    
+    func actuallySeekToTime() {
+        if let player = videoPlayer {
+            isSeekInProgress = true
+            let seekTimeInProgress = chaseTime
+            player.seek(to: seekTimeInProgress, toleranceBefore: CMTime.zero,
+                        toleranceAfter: CMTime.zero, completionHandler:
+                { (isFinished:Bool) -> Void in
+                    
+                    if CMTimeCompare(seekTimeInProgress, self.chaseTime) == 0 {
+                        self.isSeekInProgress = false
+                    } else {
+                        self.trySeekToChaseTime()
+                    }
+            })
+        }
+    }
+    
+    private func updateAudioViews() {
         guard let audioPlayer = audioPlayer else { return }
         playButton.isSelected = isPlaying
         
@@ -109,15 +190,15 @@ class ViewController: UIViewController {
         }
     }
     
-    private func playPause() {
+    private func playPauseAudio() {
         if isPlaying {
             audioPlayer?.pause()
             cancelTimer()
-            updateViews()
+            updateAudioViews()
         } else {
             audioPlayer?.play()
             startTimer()
-            updateViews()
+            updateAudioViews()
         }
     }
     
@@ -132,7 +213,7 @@ class ViewController: UIViewController {
     }
     
     @objc private func updateTimer(timer: Timer) {
-        updateViews()
+        updateAudioViews()
     }
 
     private func presentVideoPickerController() {
@@ -441,11 +522,14 @@ class ViewController: UIViewController {
     }
     
     @IBAction func videoSliderValueChanged(_ sender: Any) {
-        
+        guard let timescale = timescale else { return }
+        let seekTime: CMTime = CMTimeMakeWithSeconds(Float64(videoSlider!.value), preferredTimescale: timescale)
+        stopPlayingAndSeekSmoothlyToTime(newChaseTime: seekTime)
+        updateVideoViews()
     }
     
     @IBAction func addVideoMarker(_ sender: Any) {
-        let markerPosition = videoSlider.value
+        let markerPosition = videoSlider.value / videoSlider.maximumValue
         guard let marker = Marker(position: markerPosition as NSNumber) else { return }
         videoMarkers.append(marker)
         
@@ -496,7 +580,7 @@ class ViewController: UIViewController {
     }
     
     @IBAction func playButtonPressed(_ sender: Any) {
-        playPause()
+        playPauseAudio()
     }
 }
 
@@ -509,20 +593,12 @@ extension ViewController: UIImagePickerControllerDelegate, UINavigationControlle
         
         guard let mediaType = info[UIImagePickerController.InfoKey.mediaType] as? String,
             mediaType == (kUTTypeMovie as String),
-            let url = info[UIImagePickerController.InfoKey.mediaURL] as? URL else {
+            let videoURL = info[UIImagePickerController.InfoKey.mediaURL] as? URL else {
                 
                 // TODO: self.presentInformationalAlertController(title: "Error", message: "Please choose a video")
                 return
         }
-        playerLayer?.removeFromSuperlayer()
-                
-        videoPlayer = AVPlayer(playerItem: slowMotion(url: url))
-        playerLayer = AVPlayerLayer(player: videoPlayer)
-        playerLayer?.frame = videoView.bounds
-        playerLayer?.videoGravity = .resizeAspect
-        videoView.layer.insertSublayer(playerLayer!, at: 0)
-        
-        videoPlayer.play()
+        self.videoURL = videoURL
     }
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
@@ -554,6 +630,7 @@ extension ViewController: FDWaveformViewDelegate {
             } else {
                 audioPlayer.currentTime = 0
             }
+            audioTimeElapsedLabel.text = timeFormatter.string(from: audioPlayer.currentTime)
         }
     }
 }
@@ -566,6 +643,6 @@ extension ViewController: AVAudioPlayerDelegate {
     }
     
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        updateViews()
+        updateAudioViews()
     }
 }

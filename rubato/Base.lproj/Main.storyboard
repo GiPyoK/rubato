@@ -200,6 +200,8 @@
                         <outlet property="videoMarkerCount" destination="VaL-K5-VET" id="9Kb-nH-YrM"/>
                         <outlet property="videoMarkerView" destination="10r-mH-2w6" id="2YT-O2-0dN"/>
                         <outlet property="videoSlider" destination="e8f-8d-oXE" id="Iny-hC-d4c"/>
+                        <outlet property="videoTimeElapsedLabel" destination="Hy3-G3-F31" id="VjL-9b-9fe"/>
+                        <outlet property="videoTimeRemainingLabel" destination="12w-aa-PYk" id="137-QB-Ipv"/>
                         <outlet property="videoView" destination="EIo-6A-wZp" id="V85-Sp-pbS"/>
                     </connections>
                 </viewController>
