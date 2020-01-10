@@ -17,12 +17,18 @@ class ViewController: UIViewController {
 
     @IBOutlet weak var videoView: UIView!
     @IBOutlet weak var audioView: UIView!
-    @IBOutlet weak var markerView: UIView!
+    @IBOutlet weak var videoMarkerView: UIView!
+    @IBOutlet weak var audioMarkerView: UIView!
     @IBOutlet weak var videoSlider: UISlider!
+    @IBOutlet weak var videoMarkerCount: UILabel!
+    @IBOutlet weak var audioMarkerCount: UILabel!
     
-    // video player
+    // video
     var videoPlayer: AVPlayer!
     var playerLayer: AVPlayerLayer?
+    
+    // audio
+    var waveform = FDWaveformView()
     
     // marker
     var videoMarkers: [Marker] = []
@@ -35,21 +41,20 @@ class ViewController: UIViewController {
         view.addGestureRecognizer(tapGesture)
         
         // audio waveform
-        let url = Bundle.main.url(forResource: "Dubstep1", withExtension: "mp3")
-        let waveform = FDWaveformView()
+        guard let url = Bundle.main.url(forResource: "Dubstep2", withExtension: "mp3") else { return }
         waveform.audioURL = url
         waveform.doesAllowScroll = false
         waveform.doesAllowStretch = false
         waveform.doesAllowScrubbing = true
-        waveform.frame = audioView.bounds
-        audioView.insertSubview(waveform, at: 0)
+        
+        view.addSubview(waveform)
+        waveform.translatesAutoresizingMaskIntoConstraints = false
+        waveform.topAnchor.constraint(equalTo: audioView.topAnchor).isActive = true
+        waveform.leadingAnchor.constraint(equalTo: audioView.leadingAnchor).isActive = true
+        waveform.trailingAnchor.constraint(equalTo: audioView.trailingAnchor).isActive = true
+        waveform.heightAnchor.constraint(equalTo: audioView.heightAnchor).isActive = true
     }
 
-    @IBAction func chooseVideo(_ sender: Any) {
-        presentVideoPickerController()
-//        getAuthorizationForAppleMusic()
-    }
-    
     private func presentVideoPickerController() {
         if UIImagePickerController.isSourceTypeAvailable(UIImagePickerController.SourceType.photoLibrary){
             DispatchQueue.main.async {
@@ -350,6 +355,11 @@ class ViewController: UIViewController {
     }
     
     // MARK: - IBActions
+    @IBAction func chooseVideo(_ sender: Any) {
+        //        presentVideoPickerController()
+        getAuthorizationForAppleMusic()
+    }
+    
     @IBAction func videoSliderValueChanged(_ sender: Any) {
         
     }
@@ -360,27 +370,49 @@ class ViewController: UIViewController {
         videoMarkers.append(marker)
         
         let imageView = UIImageView(image: marker.image)
-        let size = markerView.frame.height
-        let xPosition = (markerView.frame.width * CGFloat(markerPosition)) - size/2.0
+        let size = videoMarkerView.frame.height
+        let xPosition = (videoMarkerView.frame.width * CGFloat(markerPosition)) - size/2.0
         
-        imageView.frame = CGRect(x: xPosition, y: -size, width: size, height: size)
+        imageView.frame = CGRect(x: xPosition, y: 0, width: size, height: size)
         imageView.tag = videoMarkers.count
-        markerView.addSubview(imageView)
-        markerView.bringSubviewToFront(imageView)
-        
+        videoMarkerView.addSubview(imageView)
+        videoMarkerView.bringSubviewToFront(imageView)
+        videoMarkerCount.text = "Marker: \(videoMarkers.count)"
     }
     
     @IBAction func removeVideoMarker(_ sender: Any) {
         if !videoMarkers.isEmpty {
-            markerView.viewWithTag(videoMarkers.count)?.removeFromSuperview()
+            videoMarkerView.viewWithTag(videoMarkers.count)?.removeFromSuperview()
             videoMarkers.removeLast()
+            videoMarkerCount.text = "Marker: \(videoMarkers.count)"
         }
     }
     
-    @IBAction func removeAudioMarker(_ sender: Any) {
-        
-    }
     @IBAction func addAudioMarker(_ sender: Any) {
+        if (audioMarkers.count == videoMarkers.count) {
+            return
+        }
+        let markerPosition: Float = (waveform.highlightedSamples != nil ? Float(waveform.highlightedSamples!.endIndex) : 0.0) / Float(waveform.totalSamples)
+        guard let marker = Marker(position: markerPosition as NSNumber) else { return }
+        audioMarkers.append(marker)
+
+        let imageView = UIImageView(image: marker.image)
+        let size = audioMarkerView.frame.height
+        let xPosition = (audioMarkerView.frame.width * CGFloat(markerPosition)) - size/2.0
+
+        imageView.frame = CGRect(x: xPosition, y: 0, width: size, height: size)
+        imageView.tag = audioMarkers.count
+        audioMarkerView.addSubview(imageView)
+        audioMarkerView.bringSubviewToFront(imageView)
+        audioMarkerCount.text = "Marker: \(audioMarkers.count)"
+    }
+    
+    @IBAction func removeAudioMarker(_ sender: Any) {
+        if !audioMarkers.isEmpty {
+            audioMarkerView.viewWithTag(audioMarkers.count)?.removeFromSuperview()
+            audioMarkers.removeLast()
+            audioMarkerCount.text = "Marker: \(audioMarkers.count)"
+        }
     }
     
 }
@@ -422,7 +454,7 @@ extension ViewController: MPMediaPickerControllerDelegate {
             guard let song = selectedSongs.first else { return }
             
             let url = song.value(forProperty: MPMediaItemPropertyAssetURL) as? URL
-            
+            print(url)
         }
     }
     
@@ -430,4 +462,3 @@ extension ViewController: MPMediaPickerControllerDelegate {
         mediaPicker.dismiss(animated: true, completion: nil)
     }
 }
-
