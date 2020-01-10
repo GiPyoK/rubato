@@ -12,7 +12,7 @@
 NS_SWIFT_NAME(Marker)
 @interface GIPMarker : NSObject
 
-@property NSNumber *position;
+@property Float64 position;
 @property UIImage *image;
 
 - (instancetype)initWithPosition:(NSNumber *)position;

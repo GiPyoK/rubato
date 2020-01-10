@@ -94,6 +94,8 @@ class ViewController: UIViewController {
         waveform.doesAllowScroll = false
         waveform.doesAllowStretch = false
         waveform.doesAllowScrubbing = true
+        waveform.wavesColor = UIColor.systemGray
+        waveform.progressColor = UIColor.systemBlue
         view.addSubview(waveform)
         waveform.translatesAutoresizingMaskIntoConstraints = false
         waveform.topAnchor.constraint(equalTo: audioView.topAnchor).isActive = true
@@ -261,37 +263,64 @@ class ViewController: UIViewController {
         }
     }
     
-    private func slowMotion(url: URL) -> AVPlayerItem? {
+    private func applyEffects() {
         
-        let videoAsset = AVURLAsset(url: url)
-        
+        guard let videoAsset = videoAsset, let timescale = timescale, let audioPlayer = audioPlayer else { return }
+        let totalDuration = videoAsset.duration
         let mixComp = AVMutableComposition()
-       
         let videoAssetSourceTrack = videoAsset.tracks(withMediaType: AVMediaType.video).first! as AVAssetTrack
-        
-        guard let track1 = mixComp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
+        guard let track = mixComp.addMutableTrack(withMediaType: .video, preferredTrackID: kCMPersistentTrackID_Invalid) else {
             print("Error while adding mutable track to composition")
-            return nil
+            return
         }
 
         do {
-            try track1.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
-            
-            let start = fastToSlow(track: track1, startTime: .zero, endTime: CMTimeMake(value: Int64(Double(videoAsset.duration.value) * 0.5), timescale: 600), finalDuration: 1.0, timescale: 600)
-            slowToFast(track: track1, startTime: start, endTime: CMTimeMake(value: videoAsset.duration.value, timescale: 600), finalDuration: 1.0, timescale: 600)
-            
-            
-            track1.preferredTransform = videoAssetSourceTrack.preferredTransform
-            
-            
-            let asset:AVAsset = mixComp
-            print("Applied slow motion effect!")
-            return AVPlayerItem(asset: asset)
-            
+            try track.insertTimeRange(CMTimeRangeMake(start: CMTime.zero, duration: videoAsset.duration), of: videoAssetSourceTrack, at: CMTime.zero)
         } catch {
-            print("Error processing slow motion: \(error)")
-            return nil
+            print("Error inserting time range: \(error)")
+            return
         }
+        
+        if !videoMarkers.isEmpty && !audioMarkers.isEmpty && videoMarkers.count == audioMarkers.count {
+            videoMarkers.sort{$0.position < $1.position}
+            audioMarkers.sort{$0.position < $1.position}
+            
+            var start = CMTime.zero
+            var index = 0
+            var endTime = CMTimeMake(value: Int64(videoMarkers[index].position * Float64(totalDuration.value)), timescale: timescale)
+            var finalDuration = Float64(audioMarkers[index].position * audioPlayer.duration)
+            start = fastToSlow(track: track, startTime: start, endTime: endTime, finalDuration: finalDuration, timescale: timescale)
+            start = CMTimeAdd(start, CMTimeMakeWithSeconds(finalDuration, preferredTimescale: timescale))
+            index += 1
+            while index < videoMarkers.count {
+                let timeDiff = CMTimeSubtract(CMTimeMake(value: Int64(videoMarkers[index].position * Float64(totalDuration.value)), timescale: timescale), endTime)
+                endTime = CMTimeMakeWithSeconds(CMTimeGetSeconds(timeDiff) / 2.0 + CMTimeGetSeconds(endTime), preferredTimescale: timescale)
+                let durationDiff = Float64(audioMarkers[index].position * audioPlayer.duration) - finalDuration
+                finalDuration = durationDiff / 2.0
+                
+                start = slowToFast(track: track, startTime: start, endTime: endTime, finalDuration: finalDuration, timescale: timescale)
+                
+                start = CMTimeAdd(start, CMTimeMakeWithSeconds(finalDuration, preferredTimescale: timescale))
+                endTime = CMTimeMake(value: Int64(videoMarkers[index].position * Float64(totalDuration.value)), timescale: timescale)
+                
+                start = fastToSlow(track: track, startTime: start, endTime: endTime, finalDuration: finalDuration, timescale: timescale)
+                
+                index += 1
+            }
+            start = slowToFast(track: track, startTime: start, endTime: totalDuration, finalDuration: CMTimeGetSeconds(totalDuration) - finalDuration, timescale: timescale)
+
+            track.preferredTransform = videoAssetSourceTrack.preferredTransform
+        }
+        
+        playerLayer?.removeFromSuperlayer()
+        self.videoAsset = mixComp
+        videoPlayer = AVPlayer(playerItem: AVPlayerItem(asset: self.videoAsset!))
+        playerLayer = AVPlayerLayer(player: videoPlayer!)
+        playerLayer?.frame = videoView.bounds
+        playerLayer?.videoGravity = .resizeAspect
+        videoView.layer.insertSublayer(playerLayer!, at: 0)
+        videoPlayer!.play()
+        
     }
     
     func slowToFast(track: AVMutableCompositionTrack, startTime: CMTime, endTime: CMTime, finalDuration: Float64, timescale: CMTimeScale) -> CMTime {
@@ -519,6 +548,9 @@ class ViewController: UIViewController {
     // MARK: - IBActions
     @IBAction func chooseVideo(_ sender: Any) {
         presentVideoPickerController()
+    }
+    @IBAction func applyEffectsAndPlay(_ sender: Any) {
+        applyEffects()
     }
     
     @IBAction func videoSliderValueChanged(_ sender: Any) {

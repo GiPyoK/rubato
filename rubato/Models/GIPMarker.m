@@ -10,7 +10,7 @@
 
 @implementation GIPMarker
 
-- (instancetype)initWithPosition:(NSNumber *)position {
+- (instancetype)initWithPosition:(Float64)position {
     self = [super init];
     if (self) {
         _position = position;
