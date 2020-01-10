@@ -290,9 +290,10 @@ class ViewController: UIViewController {
             var endTime = CMTimeMake(value: Int64(videoMarkers[index].position * Float64(totalDuration.value)), timescale: timescale)
             var finalDuration = Float64(audioMarkers[index].position * audioPlayer.duration)
             start = fastToSlow(track: track, startTime: start, endTime: endTime, finalDuration: finalDuration, timescale: timescale)
-            start = CMTimeAdd(start, CMTimeMakeWithSeconds(finalDuration, preferredTimescale: timescale))
+            //start = CMTimeAdd(start, CMTimeMakeWithSeconds(finalDuration, preferredTimescale: timescale))
             index += 1
             while index < videoMarkers.count {
+                print("applyEffects() while loop")
                 let timeDiff = CMTimeSubtract(CMTimeMake(value: Int64(videoMarkers[index].position * Float64(totalDuration.value)), timescale: timescale), endTime)
                 endTime = CMTimeMakeWithSeconds(CMTimeGetSeconds(timeDiff) / 2.0 + CMTimeGetSeconds(endTime), preferredTimescale: timescale)
                 let durationDiff = Float64(audioMarkers[index].position * audioPlayer.duration) - finalDuration
@@ -300,7 +301,7 @@ class ViewController: UIViewController {
                 
                 start = slowToFast(track: track, startTime: start, endTime: endTime, finalDuration: finalDuration, timescale: timescale)
                 
-                start = CMTimeAdd(start, CMTimeMakeWithSeconds(finalDuration, preferredTimescale: timescale))
+                //start = CMTimeAdd(start, CMTimeMakeWithSeconds(finalDuration, preferredTimescale: timescale))
                 endTime = CMTimeMake(value: Int64(videoMarkers[index].position * Float64(totalDuration.value)), timescale: timescale)
                 
                 start = fastToSlow(track: track, startTime: start, endTime: endTime, finalDuration: finalDuration, timescale: timescale)
@@ -313,8 +314,7 @@ class ViewController: UIViewController {
         }
         
         playerLayer?.removeFromSuperlayer()
-        self.videoAsset = mixComp
-        videoPlayer = AVPlayer(playerItem: AVPlayerItem(asset: self.videoAsset!))
+        videoPlayer = AVPlayer(playerItem: AVPlayerItem(asset: mixComp))
         playerLayer = AVPlayerLayer(player: videoPlayer!)
         playerLayer?.frame = videoView.bounds
         playerLayer?.videoGravity = .resizeAspect
@@ -353,6 +353,7 @@ class ViewController: UIViewController {
         
         // slow mo loop
         while finalSlowMoFrames > 0 {
+            print("slowToFast slow mo while loop")
             if requiredFrames <= finalSlowMoFrames {
                 if finalSlowMoFrames < slowMoDuration + 10 {
                     slowMoDuration = finalSlowMoFrames - 10
@@ -368,6 +369,7 @@ class ViewController: UIViewController {
                 continue
             } else {
                 repeat {
+                    print("slowToFast slow mo repeat while loop")
                     slowMoDuration = Int64(Double(slowMoDuration) / 2.0)
                     numOfSlowMoIteration = Int64(Double(numOfSlowMoIteration) / 2.0)
                     requiredFrames = calcFrames(duration: slowMoDuration, iteration: numOfSlowMoIteration)
@@ -394,6 +396,7 @@ class ViewController: UIViewController {
         var iteration: Int64 = 0
         
         while iteration < numOfFastMoIteration {
+            print("slowToFast fast mo while loop")
             if iteration == numOfFastMoIteration - 1 {
                 if originalFastMoFrames > 10 + increament {
                     increament = originalFastMoFrames - 10
@@ -415,6 +418,7 @@ class ViewController: UIViewController {
             iteration += 1
             
             while increament < Int64(increamentFloat) {
+                print("slowToFast fast mo increament while loop")
                 increament += 1
             }
         }
@@ -452,21 +456,24 @@ class ViewController: UIViewController {
         
         // slow mo loop
         while finalSlowMoFrames > 0 {
+            print("fastToSlow slow mo while loop")
             if requiredFrames <= finalSlowMoFrames {
-                if finalSlowMoFrames < slowMoDuration + 10 {
-                    slowMoDuration = finalSlowMoFrames - 10
-                }
                 track.scaleTimeRange(CMTimeRangeMake(start: start, duration: singleFrame),
                                      toDuration: CMTimeMake(value: 10 + slowMoDuration, timescale: timescale))
                 start = CMTimeSubtract(start, singleFrame)
-                finalSlowMoFrames -= (10 + slowMoDuration)
+                finalSlowMoFrames = finalSlowMoFrames - (10 + slowMoDuration)
                 if requiredFrames > finalSlowMoFrames {
                     slowMoDuration -= 1
                     numOfSlowMoIteration -= 1
+                    requiredFrames = calcFrames(duration: slowMoDuration, iteration: numOfSlowMoIteration)
+                }
+                if finalSlowMoFrames < slowMoDuration + 10 {
+                    slowMoDuration = finalSlowMoFrames - 10
                 }
                 continue
             } else {
                 repeat {
+                    print("fastToSlow slow mo repeat while loop")
                     slowMoDuration = Int64(Double(slowMoDuration) / 2.0)
                     numOfSlowMoIteration = Int64(Double(numOfSlowMoIteration) / 2.0)
                     requiredFrames = calcFrames(duration: slowMoDuration, iteration: numOfSlowMoIteration)
@@ -495,6 +502,7 @@ class ViewController: UIViewController {
         start = CMTimeSubtract(start, CMTimeMake(value: 10 + increament, timescale: timescale))
         
         while iteration < numOfFastMoIteration {
+            print("fastToSlow fast mo while loop")
             if iteration == numOfFastMoIteration - 1 {
                 if originalFastMoFrames > 10 + increament {
                     increament = originalFastMoFrames - 10
@@ -515,6 +523,7 @@ class ViewController: UIViewController {
             iteration += 1
             
             while increament < Int64(increamentFloat) {
+                print("fastToSlow fast mo increament while loop")
                 increament += 1
             }
         }
