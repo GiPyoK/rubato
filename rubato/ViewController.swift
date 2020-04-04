@@ -264,7 +264,6 @@ class ViewController: UIViewController {
     }
     
     private func applyEffects() {
-        
         guard let videoAsset = videoAsset, let timescale = timescale, let audioPlayer = audioPlayer else { return }
         let totalDuration = videoAsset.duration
         let mixComp = AVMutableComposition()
@@ -561,13 +560,13 @@ class ViewController: UIViewController {
             markerView.removeFromSuperview()
         }
         videoMarkers = []
-        videoMarkerCount.text = "Marker: \(videoMarkers.count)"
+        videoMarkerCount.text = "Markers: \(videoMarkers.count)"
         
         for markerView in audioMarkerView.subviews {
             markerView.removeFromSuperview()
         }
         audioMarkers = []
-        audioMarkerCount.text = "Marker: \(audioMarkers.count)"
+        audioMarkerCount.text = "Markers: \(audioMarkers.count)"
     }
     @IBAction func applyEffectsAndPlay(_ sender: Any) {
         applyEffects()
